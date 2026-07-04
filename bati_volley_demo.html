@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Batı Volley İstatistik Demo</title>
+<style>
+  :root{--bg:#1b0d12;--card:#2a121b;--accent:#f07a24;--accent2:#8e2130;--text:#fff7ef;--muted:#d9b9aa;--ok:#45c476;--danger:#ef5555;}
+  *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,#3a1620,var(--bg));color:var(--text)}
+  header{padding:22px 16px;text-align:center;background:linear-gradient(135deg,var(--accent2),var(--accent));box-shadow:0 4px 20px #0006}
+  header h1{margin:0;font-size:26px;letter-spacing:.5px} header p{margin:6px 0 0;color:#fff3e8}
+  main{max-width:1150px;margin:0 auto;padding:18px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.card{background:#2a121bd9;border:1px solid #ffffff18;border-radius:18px;padding:16px;box-shadow:0 8px 22px #0005}.full{grid-column:1/-1}
+  h2{margin:0 0 12px;font-size:20px;color:#ffd5b9} label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
+  input,select{width:100%;padding:11px;border-radius:12px;border:1px solid #ffffff26;background:#17090e;color:var(--text);outline:none}
+  button{border:0;border-radius:12px;padding:10px 12px;margin:4px;cursor:pointer;font-weight:700;color:white;background:var(--accent);box-shadow:0 3px 10px #0005}button.secondary{background:#6d2b3a}button.good{background:var(--ok)}button.danger{background:var(--danger)}button.small{padding:7px 9px;font-size:12px}
+  table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:12px}th,td{padding:10px;border-bottom:1px solid #ffffff14;text-align:left}th{color:#ffd5b9;background:#ffffff0b}tr:hover{background:#ffffff08}.playerRow{display:grid;grid-template-columns:1.2fr .7fr 1.5fr;align-items:center;gap:8px;padding:10px;border-bottom:1px solid #ffffff14}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#ffffff12;color:#ffd5b9;font-size:12px}.totals{font-weight:bold;color:#fff}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.tab{background:#3a1824}.tab.active{background:var(--accent)}.view{display:none}.view.active{display:block}.notice{font-size:13px;color:var(--muted);line-height:1.4}.profile{display:grid;grid-template-columns:80px 1fr;gap:12px;align-items:center}.avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}.statbox{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.statbox div{background:#ffffff0c;border-radius:14px;padding:12px;text-align:center}.statbox b{display:block;font-size:22px;color:#ffd5b9}@media(max-width:800px){.grid{grid-template-columns:1fr}.playerRow{grid-template-columns:1fr}.statbox{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><h1>🏐 Batı Volley İstatistik Demo</h1><p>Maç sırasında oyuncuya +Sayı / +Ace / +Blok bas, sıralamalar otomatik güncellensin.</p></header>
+<main>
+  <div class="tabs">
+    <button class="tab active" onclick="showView('admin',this)">Admin / Veri Girişi</button>
+    <button class="tab" onclick="showView('live',this)">Maç Ekranı</button>
+    <button class="tab" onclick="showView('public',this)">Herkese Açık Görünüm</button>
+    <button class="tab" onclick="showView('profiles',this)">Oyuncu Profili</button>
+  </div>
+
+  <section id="admin" class="view active">
+    <div class="grid">
+      <div class="card"><h2>Takım Ekle</h2><label>Takım adı</label><input id="teamName" placeholder="Örn. Force Sports Academy"><button onclick="addTeam()">Takım Ekle</button><div id="teamList" class="notice"></div></div>
+      <div class="card"><h2>Oyuncu Ekle</h2><label>Takım</label><select id="playerTeam"></select><label>Oyuncu adı</label><input id="playerName" placeholder="Örn. Yakup"><label>Fotoğraf URL / boş kalabilir</label><input id="playerPhoto" placeholder="https://..."><button onclick="addPlayer()">Oyuncu Ekle</button></div>
+      <div class="card full"><h2>Maç Oluştur</h2><div class="grid"><div><label>Ev sahibi</label><select id="homeTeam"></select></div><div><label>Deplasman</label><select id="awayTeam"></select></div></div><button onclick="createMatch()">Maçı Oluştur / Seç</button><p class="notice">Demo verileri tarayıcının içinde saklanır. Sayfayı aynı bilgisayarda tekrar açınca kalır. Başka kişilerin görmesi için sonradan yayınlama gerekir.</p></div>
+    </div>
+  </section>
+
+  <section id="live" class="view"><div class="card"><h2 id="matchTitle">Maç seçilmedi</h2><div id="matchPlayers"></div></div></section>
+
+  <section id="public" class="view"><div class="grid"><div class="card full"><h2>Genel Oyuncu Sıralaması</h2><div id="leaderboard"></div></div><div class="card"><h2>Ace Krallığı</h2><div id="aceBoard"></div></div><div class="card"><h2>Blok Krallığı</h2><div id="blockBoard"></div></div></div></section>
+
+  <section id="profiles" class="view"><div class="card"><h2>Oyuncu Profili</h2><label>Oyuncu seç</label><select id="profileSelect" onchange="renderProfile()"></select><div id="profileBox"></div></div></section>
+</main>
+<script>
+const seed={teams:['Force Sports Academy','Volleybulls','Hexspike','Türkmen Şimşekleri','Filede Panik','Champi'],players:[
+{name:'Yakup',team:'Force Sports Academy',photo:''},{name:'Berat',team:'Force Sports Academy',photo:''},{name:'Yiğit',team:'Force Sports Academy',photo:''},{name:'Mert',team:'Volleybulls',photo:''},{name:'Can',team:'Hexspike',photo:''},{name:'Ali',team:'Türkmen Şimşekleri',photo:''}],matches:[],stats:{},currentMatch:null};
+let data=JSON.parse(localStorage.getItem('bv_demo')||'null')||seed;
+function save(){localStorage.setItem('bv_demo',JSON.stringify(data));renderAll()}
+function showView(id,btn){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderAll()}
+function addTeam(){const v=document.getElementById('teamName').value.trim();if(!v)return;if(!data.teams.includes(v))data.teams.push(v);document.getElementById('teamName').value='';save()}
+function addPlayer(){const name=document.getElementById('playerName').value.trim();const team=document.getElementById('playerTeam').value;const photo=document.getElementById('playerPhoto').value.trim();if(!name||!team)return;data.players.push({name,team,photo});document.getElementById('playerName').value='';document.getElementById('playerPhoto').value='';save()}
+function createMatch(){const h=document.getElementById('homeTeam').value,a=document.getElementById('awayTeam').value;if(!h||!a||h===a){alert('İki farklı takım seçmelisin.');return}const id=Date.now().toString();data.matches.push({id,home:h,away:a,date:new Date().toLocaleDateString('tr-TR')});data.currentMatch=id;save();document.querySelector('.tab:nth-child(2)').click()}
+function statKey(matchId,player){return matchId+'__'+player}
+function inc(player,type,amount=1){if(!data.currentMatch){alert('Önce maç oluştur.');return}const k=statKey(data.currentMatch,player);data.stats[k]=data.stats[k]||{score:0,ace:0,block:0};data.stats[k][type]=Math.max(0,(data.stats[k][type]||0)+amount);save()}
+function totalsForPlayer(name){let t={score:0,ace:0,block:0,matches:0};Object.entries(data.stats).forEach(([k,s])=>{if(k.endsWith('__'+name)){t.score+=s.score||0;t.ace+=s.ace||0;t.block+=s.block||0;if((s.score||0)+(s.ace||0)+(s.block||0)>0)t.matches++}});return t}
+function renderSelect(id){const el=document.getElementById(id);el.innerHTML=data.teams.map(t=>`<option>${t}</option>`).join('')}
+function renderAdmin(){['playerTeam','homeTeam','awayTeam'].forEach(renderSelect);document.getElementById('teamList').innerHTML='<br>'+data.teams.map(t=>'• '+t).join('<br>')}
+function renderLive(){const m=data.matches.find(x=>x.id===data.currentMatch);const title=document.getElementById('matchTitle');const box=document.getElementById('matchPlayers');if(!m){title.textContent='Maç seçilmedi';box.innerHTML='<p class="notice">Admin ekranından maç oluştur.</p>';return}title.textContent=m.home+' - '+m.away;const players=data.players.filter(p=>p.team===m.home||p.team===m.away);box.innerHTML=players.map(p=>{const s=data.stats[statKey(m.id,p.name)]||{score:0,ace:0,block:0};return `<div class="playerRow"><div><b>${p.name}</b><br><span class="pill">${p.team}</span></div><div class="totals">Sayı: ${s.score} | Ace: ${s.ace} | Blok: ${s.block}</div><div><button class="good" onclick="inc('${p.name}','score')">+ Sayı</button><button onclick="inc('${p.name}','ace')">+ Ace</button><button onclick="inc('${p.name}','block')">+ Blok</button><button class="danger small" onclick="inc('${p.name}','score',-1)">Sayı -</button><button class="secondary small" onclick="inc('${p.name}','ace',-1)">Ace -</button><button class="secondary small" onclick="inc('${p.name}','block',-1)">Blok -</button></div></div>`}).join('')}
+function table(rows,cols){return `<table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+function ranked(){return data.players.map(p=>({...p,...totalsForPlayer(p.name)})).sort((a,b)=>(b.score+b.ace+b.block)-(a.score+a.ace+a.block))}
+function renderBoards(){const rows=ranked();document.getElementById('leaderboard').innerHTML=table(rows,[['Oyuncu',r=>r.name],['Takım',r=>r.team],['Toplam',r=>r.score+r.ace+r.block],['Sayı',r=>r.score],['Ace',r=>r.ace],['Blok',r=>r.block],['Maç',r=>r.matches]]);document.getElementById('aceBoard').innerHTML=table([...rows].sort((a,b)=>b.ace-a.ace).slice(0,10),[['Oyuncu',r=>r.name],['Takım',r=>r.team],['Ace',r=>r.ace]]);document.getElementById('blockBoard').innerHTML=table([...rows].sort((a,b)=>b.block-a.block).slice(0,10),[['Oyuncu',r=>r.name],['Takım',r=>r.team],['Blok',r=>r.block]])}
+function renderProfileSelect(){const el=document.getElementById('profileSelect');el.innerHTML=data.players.map(p=>`<option value="${p.name}">${p.name} - ${p.team}</option>`).join('')}
+function renderProfile(){const name=document.getElementById('profileSelect').value;const p=data.players.find(x=>x.name===name);if(!p)return;const t=totalsForPlayer(name);const photo=p.photo?`<img class="avatar" src="${p.photo}">`:`<div class="avatar">${p.name[0]||'?'}</div>`;document.getElementById('profileBox').innerHTML=`<br><div class="profile">${photo}<div><h2>${p.name}</h2><span class="pill">${p.team}</span></div></div><br><div class="statbox"><div><b>${t.score+t.ace+t.block}</b>Toplam</div><div><b>${t.score}</b>Sayı</div><div><b>${t.ace}</b>Ace</div><div><b>${t.block}</b>Blok</div></div>`}
+function renderAll(){renderAdmin();renderLive();renderBoards();renderProfileSelect();renderProfile()}
+renderAll();
+</script>
+</body>
+</html>
